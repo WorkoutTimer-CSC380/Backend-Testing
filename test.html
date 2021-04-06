@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>what</title>
+</head>
+<body>
+    <script>
+        const input = document.createElement("input");
+
+        document.body.appendChild(input);
+
+        const websocket = new WebSocket("ws://localhost:3000");
+
+        input.addEventListener("keydown", (evt) => {
+            if (evt.keyCode == 13) {
+                evt.preventDefault();
+
+                // send to websocket and clear input
+                websocket.send(input.value);
+                input.value = "";
+            }
+        });
+    </script>
+</body>
+</html>
