@@ -1,46 +1,65 @@
-import { IncomingMessage } from "http";
-import { Socket } from "net";
+import http from "http";
 
 import express from "express";
-// import sqlite3 from "sqlite3";
-import { v4 as uuid } from "uuid";
-import ws from "ws";
-import WebSocket from "ws";
+import socketio from "socket.io";
 
-// Is there a better way to manage active connections?
-const connections: WebSocket[] = [];
+const PORT = 3000;
 
-// TODO: Define how we store items in Database.
-// NOTE: Also we're using JSON right?
-// "Connect" to database
-// const db = new sqlite3.Database("workout-timer.db");
-
-// Setup express api
+// Setup express API
 const app = express();
+const httpServer = new http.Server(app);
+const io = new socketio.Server(httpServer);
 
-// TODO: Better define API for client <-> backend communication
+// NOTE: For later, we'll need to parse bodies on POST requests
+// const jsonParser = express.json();
 
-// React to WebSockets and send messages
-const wsServer = new ws.Server({ noServer: true });
-wsServer.on("connection", (socket, req) => {
-    console.log("Connection made from client. Giving id: ");
+// REST API for CRUD operations on the timer
 
-    // Give client uuid for session
-    const id = uuid();
-    socket.send(`id:${id}`);
-    
-    connections.push(socket);
-    
-    socket.on("message", msg => {
-        console.log(`Client ${id} sent ${msg}`);
+// TODO: Implement
+// List all workouts available
+app.get("/workout", (req, res) => {
+    res.json({});
+});
+
+// TODO: Implement
+// Get information for a specific workout
+app.get("/workout/:id", (req, res) => {
+    const id = parseInt(req.params["id"]);
+
+    // Check if exists
+    const exists = true;
+    if (exists) {
+        res.json({ youveGotData: true });
+    } else {
+        res.status(400).send("Better error message goes here");
+    }
+});
+
+// TODO: Implement
+// Create a workout: Returns 201 on success, 400 otherwise
+app.post("/workout", (req, res) => {
+    //
+});
+
+// TODO: Implement
+// Delete a workout on the backend
+app.delete("/workout/:id", (req, res) => {
+    //
+});
+
+const sockets: socketio.Socket[] = [];
+
+io.on("connection", (socket) => {
+    console.log("User connected");
+
+    sockets.push(socket);
+
+    socket.on("disconnect", () => {
+        const index = sockets.indexOf(socket);
+        sockets.splice(index, 1);
     });
 });
 
-// Listen for websockets on express
-const server = app.listen(3000);
-server.on("upgrade", (req: IncomingMessage, sock: Socket, head: Buffer) => {
-    wsServer.handleUpgrade(req, sock, head, (wsSock) => {
-        // Notify WS server that a connection was made
-        wsServer.emit("connection", wsSock, req);
-    })
+httpServer.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`);
 });
