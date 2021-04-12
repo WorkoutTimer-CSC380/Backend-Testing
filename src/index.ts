@@ -3,6 +3,9 @@ import http from "http";
 import express from "express";
 import socketio from "socket.io";
 
+import { Serializer } from "./seralize";
+import { Workout } from "./workout";
+
 const PORT = 3000;
 
 // Setup express API
@@ -10,56 +13,64 @@ const app = express();
 const httpServer = new http.Server(app);
 const io = new socketio.Server(httpServer);
 
-// NOTE: For later, we'll need to parse bodies on POST requests
-// const jsonParser = express.json();
+const serializer = new Serializer();
+
+app.use(express.json());
 
 // REST API for CRUD operations on the timer
 
-// TODO: Implement
-// List all workouts available
+// List all workouts available naively
 app.get("/workout", (req, res) => {
-    res.json({});
+    res.json(serializer.listWorkoutNames());
 });
 
-// TODO: Implement
 // Get information for a specific workout
-app.get("/workout/:id", (req, res) => {
-    const id = parseInt(req.params["id"]);
+app.get("/workout/:name", (req, res) => {
+    console.log(`GET /workout/${req.params["name"]}`);
 
-    // Check if exists
-    const exists = true;
-    if (exists) {
-        res.json({ youveGotData: true });
+    const name = req.params["name"];
+
+    const workout = serializer.read(name + ".json"); // NOTE: eugh
+    if (workout !== undefined) {
+        res.json(workout);
     } else {
-        res.status(400).send("Better error message goes here");
+        res.status(400).send(`Could not find workout named "${name}"`);
     }
 });
 
-// TODO: Implement
 // Create a workout: Returns 201 on success, 400 otherwise
 app.post("/workout", (req, res) => {
-    //
+    const workout = req.body as Workout;
+
+    console.log(`POST /workout with content:\n ${JSON.stringify(workout)}`);
+
+    // We're going to assume ALL data from the client should be correct
+    console.log("Writing to JSON file...");
+    
+    serializer.write(workout);
+
+    res.status(201).end(); // We've created the resource!
 });
 
 // TODO: Implement
 // Delete a workout on the backend
-app.delete("/workout/:id", (req, res) => {
-    //
+app.delete("/workout/:name", (req, res) => {
+    console.log(`TODO: DELETE /workout/${req.params["name"]}`);
 });
 
-const sockets: socketio.Socket[] = [];
-
+// NOTE: io.of("/").sockets
+// Use above to grab to connections to server as a map.
+// Each socket will have an id: 
 io.on("connection", (socket) => {
     console.log("User connected");
 
-    sockets.push(socket);
+    const sockets = io.of("/").sockets;
 
     socket.on("disconnect", () => {
-        const index = sockets.indexOf(socket);
-        sockets.splice(index, 1);
+        // TODO: Handle
     });
 });
 
 httpServer.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
+    console.log(`Listening on localhost:${PORT}`);
 });
