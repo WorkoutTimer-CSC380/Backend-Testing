@@ -1,2 +1,6 @@
-node_modules
-out
+# JavaScript / TypeScript outputs
+node_modules/
+out/
+
+# Default directory for storing workouts
+workouts/
