@@ -30,6 +30,12 @@ export class Serializer {
         }
     }
 
+    /**
+     * Grab a workout object from storage
+     * 
+     * @param name Name of the workout
+     * @returns The workout object if it exists otherwise undefined
+     */
     read(name: string): Workout | undefined {
         const wantedPath = `${this.mainPath}/${name}`;
 
@@ -40,6 +46,24 @@ export class Serializer {
         const workoutStr = fs.readFileSync(wantedPath, { encoding: "utf-8", flag: "r" });
 
         return JSON.parse(workoutStr) as Workout;
+    }
+
+    /**
+     * Delete's a workout record from storage
+     * 
+     * WARNING: This function is rather unsafe! People could redirect via path manipulation and
+     * potentially delete something else. Sanitize that input!
+     * 
+     * @param name Name of the workout
+     */
+    delete(name: string): void {
+        if (this.has(name)) {
+            fs.rmSync(`${this.mainPath}/${name}`);
+        }
+    }
+
+    has(name: string): boolean {
+        return fs.existsSync(`${this.mainPath}/${name}`);
     }
 
     listWorkoutNames(): string[] {

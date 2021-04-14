@@ -6,6 +6,7 @@ import socketio from "socket.io";
 import { Serializer } from "./seralize";
 import { Workout } from "./workout";
 
+// TODO: Use environment variable
 const PORT = 3000;
 
 // Setup express API
@@ -46,7 +47,7 @@ app.post("/workout", (req, res) => {
 
     // We're going to assume ALL data from the client should be correct
     console.log("Writing to JSON file...");
-    
+
     serializer.write(workout);
 
     res.status(201).end(); // We've created the resource!
@@ -55,7 +56,12 @@ app.post("/workout", (req, res) => {
 // TODO: Implement
 // Delete a workout on the backend
 app.delete("/workout/:name", (req, res) => {
-    console.log(`TODO: DELETE /workout/${req.params["name"]}`);
+    const name = req.params["name"];
+    console.log(`TODO: DELETE /workout/${name}`);
+
+    serializer.delete(name);
+
+    res.status(200).end();
 });
 
 // NOTE: io.of("/").sockets
@@ -64,7 +70,7 @@ app.delete("/workout/:name", (req, res) => {
 io.on("connection", (socket) => {
     console.log("User connected");
 
-    const sockets = io.of("/").sockets;
+    // const sockets = io.of("/").sockets;
 
     socket.on("disconnect", () => {
         // TODO: Handle
