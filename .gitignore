@@ -4,3 +4,6 @@ out/
 
 # Default directory for storing workouts
 workouts/
+
+# Test related output
+__fixtures__

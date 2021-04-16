@@ -6,20 +6,24 @@ import socketio from "socket.io";
 import { Serializer } from "./seralize";
 import { Workout } from "./workout";
 
+export interface ServerConfig {
+    mainPath: string
+}
+
 export class Server {
-    private app: express.Express;
-    private httpServer: http.Server;
-    private io: socketio.Server;
+    public readonly app: express.Express;
+    public readonly httpServer: http.Server;
+    public readonly io: socketio.Server;
 
-    private serializer: Serializer;
+    public readonly serializer: Serializer;
 
-    constructor() {
+    constructor(config?: ServerConfig) {
         // Setup express API
         this.app = express();
         this.httpServer = new http.Server(this.app);
         this.io = new socketio.Server(this.httpServer);
 
-        this.serializer = new Serializer();
+        this.serializer = new Serializer(config?.mainPath);
 
         this.routes();
     }
@@ -31,7 +35,7 @@ export class Server {
         this.app.use(express.json());
 
         // List all workouts available naively
-        this.app.get("/workout", (req, res) => {
+        this.app.get("/workout", (_, res) => {
             res.json(this.serializer.listWorkoutNames());
         });
 
@@ -66,7 +70,6 @@ export class Server {
         // Delete a workout on the backend
         this.app.delete("/workout/:name", (req, res) => {
             const name = req.params["name"];
-            console.log(`TODO: DELETE /workout/${name}`);
 
             this.serializer.delete(name);
 
@@ -74,7 +77,7 @@ export class Server {
         });
     }
 
-    public listen(port: number): void {
+    public initSocketio(): void {
         // NOTE: io.of("/").sockets
         // Use above to grab to connections to server as a map.
         // Each socket will have an id: 
@@ -87,7 +90,10 @@ export class Server {
                 // TODO: Handle
             });
         });
+    }
 
+    public listen(port: number): void {
+        this.initSocketio();
         this.httpServer.listen(port, () => console.log(`Listening on port ${port}`));
     }
 }
