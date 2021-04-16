@@ -37,6 +37,8 @@ export class Server {
         // List all workouts available naively
         this.app.get("/workout", (_, res) => {
             res.json(this.serializer.listWorkoutNames());
+
+            res.status(200).end();
         });
 
         // Get information for a specific workout
