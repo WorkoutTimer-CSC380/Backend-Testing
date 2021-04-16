@@ -21,13 +21,13 @@ app.use(express.json());
 // REST API for CRUD operations on the timer
 
 // List all workouts available naively
-app.get("/workout", (req, res) => {
+app.get("/workouts", (req, res) => {
     res.json(serializer.listWorkoutNames());
 });
 
 // Get information for a specific workout
-app.get("/workout/:name", (req, res) => {
-    console.log(`GET /workout/${req.params["name"]}`);
+app.get("/workouts/:name", (req, res) => {
+    console.log(`GET /workouts/${req.params["name"]}`);
 
     const name = req.params["name"];
 
@@ -40,10 +40,10 @@ app.get("/workout/:name", (req, res) => {
 });
 
 // Create a workout: Returns 201 on success, 400 otherwise
-app.post("/workout", (req, res) => {
+app.post("/workouts", (req, res) => {
     const workout = req.body as Workout;
 
-    console.log(`POST /workout with content:\n ${JSON.stringify(workout)}`);
+    console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
 
     // We're going to assume ALL data from the client should be correct
     console.log("Writing to JSON file...");
@@ -55,14 +55,30 @@ app.post("/workout", (req, res) => {
 
 // TODO: Implement
 // Delete a workout on the backend
-app.delete("/workout/:name", (req, res) => {
+app.delete("/workouts/:name", (req, res) => {
     const name = req.params["name"];
-    console.log(`TODO: DELETE /workout/${name}`);
+    console.log(`TODO: DELETE /workouts/${name}`);
 
     serializer.delete(name);
 
     res.status(200).end();
 });
+
+//Update a workout
+app.put("/workouts/:name", (req, res)=> {
+    const workout = req.body as Workout;
+
+    console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
+
+    // We're going to assume ALL data from the client should be correct
+    console.log("Writing to JSON file...");
+
+    serializer.write(workout);
+
+    res.status(201).end(); // We've created the resource!
+
+});
+
 
 // NOTE: io.of("/").sockets
 // Use above to grab to connections to server as a map.
@@ -71,6 +87,7 @@ io.on("connection", (socket) => {
     console.log("User connected");
 
     // const sockets = io.of("/").sockets;
+    
 
     socket.on("disconnect", () => {
         // TODO: Handle
