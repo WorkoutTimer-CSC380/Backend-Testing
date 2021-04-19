@@ -100,7 +100,7 @@ describe("POST /workouts - Create a workout with the specified name", () => {
 
     it("Should return 201 indicating the workout was created in the backed", () => {
         return supertest(app)
-            .post("/workout")
+            .post("/workouts")
             .send(workout)
             .expect(201)
             .then(() => {
