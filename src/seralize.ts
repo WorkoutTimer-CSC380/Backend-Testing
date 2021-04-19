@@ -37,9 +37,10 @@ export class Serializer {
      * @returns The workout object if it exists otherwise undefined
      */
     read(name: string): Workout | undefined {
-        const wantedPath = `${this.mainPath}/${name}`;
+        const wantedPath = `${this.mainPath}/${name}.json`;
 
         if (!fs.existsSync(wantedPath)) {
+            console.warn(`Could not find ${wantedPath}!`);
             return undefined;
         }
 
@@ -58,12 +59,12 @@ export class Serializer {
      */
     delete(name: string): void {
         if (this.has(name)) {
-            fs.rmSync(`${this.mainPath}/${name}`);
+            fs.rmSync(`${this.mainPath}/${name}.json`);
         }
     }
 
     has(name: string): boolean {
-        return fs.existsSync(`${this.mainPath}/${name}`);
+        return fs.existsSync(`${this.mainPath}/${name}.json`);
     }
 
     listWorkoutNames(): string[] {

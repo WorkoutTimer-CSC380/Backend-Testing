@@ -1,4 +1,8 @@
 {
+  "exclude": [
+    "./jest.config.ts",
+    "./spec/**"
+  ],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 

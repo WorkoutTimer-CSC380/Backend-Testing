@@ -1,0 +1,9 @@
+{
+    "name": "Single Round",
+    "rounds": [
+        {
+            "name": "Pushups for 30 seconds",
+            "time": 30
+        }
+    ]
+}
