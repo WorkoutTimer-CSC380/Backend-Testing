@@ -47,7 +47,7 @@ export class Server {
 
             const name = req.params["name"];
 
-            const workout = this.serializer.read(name + ".json"); // NOTE: eugh
+            const workout = this.serializer.read(name);
             if (workout !== undefined) {
                 res.json(workout);
             } else {
