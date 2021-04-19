@@ -36,21 +36,50 @@ describe("GET /workout - List all workouts available", () => {
     const server = new Server({ mainPath: DIR_PATH });
     const app = server.app;
 
-    it("Should return 200 with all the workouts available", () => {
-        return supertest(app)
+    it("Should return 200 with all the workouts available", async () => {
+        const response = await supertest(app)
             .get("/workout")
-            .expect(200)
-            .then(response => {
-                const workouts = server.serializer.listWorkoutNames();
-                expect(response.body).toEqual(workouts);
-            });
+            .expect(200);
+        const workouts = server.serializer.listWorkoutNames();
+        expect(response.body).toEqual(workouts);
+    });
+});
+
+describe("GET /workout/:name - Grab a specific workout", () => {
+    const DIR_ID = crypto
+        .createHash("md5")
+        .update("GET /workout/:name - Grab a specific workout")
+        .digest("hex");
+
+    const DIR_PATH = path.resolve(DIR_BASE, `workout${DIR_ID}`);
+    fse.copySync(EXAMPLE_WORKOUTS, DIR_PATH);
+
+    const server = new Server({ mainPath: DIR_PATH });
+    const app = server.app;
+
+    const workout: Workout = {
+        "name": "Single Round",
+        "rounds": [
+            {
+                "name": "Pushups for 30 seconds",
+                "time": 30
+            }
+        ]
+    };
+
+    it("Should return 200 with the workout data for the specified workout", async () => {
+        const response = await supertest(app)
+            .get(`/workout/${workout.name}`)
+            .expect(200);
+
+        expect(workout).toEqual(response.body);
     });
 });
 
 describe("POST /workout - Create a workout with the specified name", () => {
     const DIR_ID = crypto
         .createHash("md5")
-        .update("POST /workout/ - Create a workout with the specified name")
+        .update("POST /workout - Create a workout with the specified name")
         .digest("hex");
 
     const DIR_PATH = path.resolve(DIR_BASE, `workout${DIR_ID}`);
