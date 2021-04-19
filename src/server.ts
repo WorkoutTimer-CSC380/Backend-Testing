@@ -35,15 +35,15 @@ export class Server {
         this.app.use(express.json());
 
         // List all workouts available naively
-        this.app.get("/workout", (_, res) => {
+        this.app.get("/workouts", (_, res) => {
             res.json(this.serializer.listWorkoutNames());
 
             res.status(200).end();
         });
 
         // Get information for a specific workout
-        this.app.get("/workout/:name", (req, res) => {
-            console.log(`GET /workout/${req.params["name"]}`);
+        this.app.get("/workouts/:name", (req, res) => {
+            console.log(`GET /workouts/${req.params["name"]}`);
 
             const name = req.params["name"];
 
@@ -56,10 +56,10 @@ export class Server {
         });
 
         // Create a workout: Returns 201 on success, 400 otherwise
-        this.app.post("/workout", (req, res) => {
+        this.app.post("/workouts", (req, res) => {
             const workout = req.body as Workout;
 
-            console.log(`POST /workout with content:\n ${JSON.stringify(workout)}`);
+            console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
 
             // We're going to assume ALL data from the client should be correct
             console.log("Writing to JSON file...");
@@ -70,7 +70,7 @@ export class Server {
         });
 
         // Delete a workout on the backend
-        this.app.delete("/workout/:name", (req, res) => {
+        this.app.delete("/workouts/:name", (req, res) => {
             const name = req.params["name"];
 
             this.serializer.delete(name);

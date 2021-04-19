@@ -24,10 +24,10 @@ afterAll(() => {
     });
 });
 
-describe("GET /workout - List all workouts available", () => {
+describe("GET /workouts - List all workouts available", () => {
     const DIR_ID = crypto
         .createHash("md5")
-        .update("GET /workout - List all workouts available")
+        .update("GET /workouts - List all workouts available")
         .digest("hex");
 
     const DIR_PATH = path.resolve(DIR_BASE, `workout${DIR_ID}`);
@@ -38,17 +38,17 @@ describe("GET /workout - List all workouts available", () => {
 
     it("Should return 200 with all the workouts available", async () => {
         const response = await supertest(app)
-            .get("/workout")
+            .get("/workouts")
             .expect(200);
         const workouts = server.serializer.listWorkoutNames();
         expect(response.body).toEqual(workouts);
     });
 });
 
-describe("GET /workout/:name - Grab a specific workout", () => {
+describe("GET /workouts/:name - Grab a specific workout", () => {
     const DIR_ID = crypto
         .createHash("md5")
-        .update("GET /workout/:name - Grab a specific workout")
+        .update("GET /workouts/:name - Grab a specific workout")
         .digest("hex");
 
     const DIR_PATH = path.resolve(DIR_BASE, `workout${DIR_ID}`);
@@ -69,17 +69,17 @@ describe("GET /workout/:name - Grab a specific workout", () => {
 
     it("Should return 200 with the workout data for the specified workout", async () => {
         const response = await supertest(app)
-            .get(`/workout/${workout.name}`)
+            .get(`/workouts/${workout.name}`)
             .expect(200);
 
         expect(workout).toEqual(response.body);
     });
 });
 
-describe("POST /workout - Create a workout with the specified name", () => {
+describe("POST /workouts - Create a workout with the specified name", () => {
     const DIR_ID = crypto
         .createHash("md5")
-        .update("POST /workout - Create a workout with the specified name")
+        .update("POST /workouts - Create a workout with the specified name")
         .digest("hex");
 
     const DIR_PATH = path.resolve(DIR_BASE, `workout${DIR_ID}`);
