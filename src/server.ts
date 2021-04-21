@@ -16,7 +16,7 @@ interface TimedTask {
 
 type TimerRequest = {
     id: string, // Client giving id for a timer
-    duration: DOMHighResTimeStamp, // How long in seconds the timer should lsat
+    duration: DOMHighResTimeStamp, // How long in seconds the timer should last in seconds
     message: string // Message to send to clients
 };
 
@@ -132,7 +132,9 @@ export class Server {
                 clearTimeout(val.timeout);
 
                 const copy = { ...val };
-                copy.left = copy.end - performance.now();
+                const now = performance.now();
+                copy.left = copy.end - now;
+                copy.end = now + copy.left;
                 this.timers.set(key, copy);
             });
 
