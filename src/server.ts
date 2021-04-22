@@ -1,4 +1,5 @@
 import http from "http";
+import { performance } from "perf_hooks";
 
 import express from "express";
 import socketio from "socket.io";
@@ -127,7 +128,7 @@ export class Server {
         });
 
         // Strange way of doing this probably
-        this.app.get("/timers/pause/", (req, res) => { // Pause ALL timers
+        this.app.get("/timers/pause", (req, res) => { // Pause ALL timers
             this.timers.forEach((val, key) => {
                 clearTimeout(val.timeout);
 
@@ -142,7 +143,7 @@ export class Server {
         });
 
 
-        this.app.get("/timers/resume/", (req, res) => { // Resume ALL timers
+        this.app.get("/timers/resume", (req, res) => { // Resume ALL timers
             this.timers.forEach((val, key) => {
                 const newTimeout = setTimeout(() => this.io.emit("timer", val.message), val.left);
 
