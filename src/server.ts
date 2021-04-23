@@ -5,7 +5,7 @@ import express from "express";
 import socketio from "socket.io";
 
 import { Serializer } from "./seralize";
-import { Workout } from "./workout";
+import { Exercise, Workout } from "./workout";
 
 interface TimedTask {
     timeout: NodeJS.Timeout, // Timeout id
@@ -22,7 +22,8 @@ type TimerRequest = {
 };
 
 export interface ServerConfig {
-    mainPath: string
+    workoutPath: string;
+    exercisePath: string;
 }
 
 export class Server {
@@ -41,7 +42,7 @@ export class Server {
         this.httpServer = new http.Server(this.app);
         this.io = new socketio.Server(this.httpServer);
 
-        this.serializer = new Serializer(config?.mainPath);
+        this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
 
         this.timers = new Map();
 
@@ -67,7 +68,7 @@ export class Server {
 
             const name = req.params["name"];
 
-            const workout = this.serializer.read(name);
+            const workout = this.serializer.readWorkout(name);
             if (workout !== undefined) {
                 res.json(workout);
             } else {
@@ -79,12 +80,12 @@ export class Server {
         this.app.post("/workouts", (req, res) => {
             const workout = req.body as Workout;
 
-            console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
+            // console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
 
             // We're going to assume ALL data from the client should be correct
-            console.log("Writing to JSON file...");
+            // console.log("Writing to JSON file...");
 
-            this.serializer.write(workout);
+            this.serializer.writeWorkout(workout);
 
             res.status(201).end(); // We've created the resource!
         });
@@ -93,12 +94,38 @@ export class Server {
         this.app.delete("/workouts/:name", (req, res) => {
             const name = req.params["name"];
 
-            this.serializer.delete(name);
+            this.serializer.deleteWorkout(name);
 
             res.status(200).end();
         });
 
-        // NOTE: Proof of concept, not final
+        this.app.post("/exercises", (req, res) => {
+            const exercise = req.body as Exercise;
+
+            // console.log(`Creating exercise: ${exercise}`);
+
+            this.serializer.writeExercise(exercise);
+
+            res.status(201).end();
+        });
+
+        this.app.get("/exercises", (req, res) => {
+            const exercises = this.serializer.allExercises();
+            // console.log("Getting all exercises...");
+
+            res.status(200).send(exercises);
+        });
+
+        this.app.delete("/exercises/:name", (req, res) => {
+            const name = req.params["name"];
+
+            // console.log(`Deleting exercise ${name}`);
+            
+            this.serializer.deleteExercise(name);
+
+            res.status(200).end();
+        });
+
         this.app.post("/timers", (req, res) => {
             const tReq = req.body as TimerRequest;
 
@@ -157,9 +184,9 @@ export class Server {
     }
 
     // public initSocketio(): void {
-        // NOTE: io.of("/").sockets
-        // Use above to grab to connections to server as a map.
-        // Each socket will have an id
+    // NOTE: io.of("/").sockets
+    // Use above to grab to connections to server as a map.
+    // Each socket will have an id
     // }
 
     public listen(port: number): void {

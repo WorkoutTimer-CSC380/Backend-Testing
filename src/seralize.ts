@@ -1,12 +1,16 @@
 import fs from "fs";
 
-import { Workout } from "./workout";
+import { Exercise, Workout } from "./workout";
 
 export class Serializer {
-    constructor(private readonly mainPath: string = "./workouts") {
-        // Create folder
-        if (!fs.existsSync(mainPath)) {
-            fs.mkdirSync(mainPath);
+    constructor(private readonly workoutPath: string = "./workouts", private readonly exercisePath: string = "./exercises") {
+        // Create folders
+        if (!fs.existsSync(workoutPath)) {
+            fs.mkdirSync(workoutPath);
+        }
+
+        if (!fs.existsSync(exercisePath)) {
+            fs.mkdirSync(exercisePath);
         }
     }
 
@@ -17,14 +21,14 @@ export class Serializer {
      * 
      * @param workout Workout to serialize
      */
-    write(workout: Workout): void {
-        const wantedPath = `${this.mainPath}/${workout.name}.json`;
+    writeWorkout(workout: Workout): void {
+        const wantedPath = `${this.workoutPath}/${workout.name}.json`;
 
         // Create if not exists
         if (!fs.existsSync(wantedPath)) {
             fs.writeFile(wantedPath, JSON.stringify(workout), (err) => {
                 if (err) {
-                    console.error(`Failed to write to ${wantedPath}`);
+                    console.error(`Failed to write workout to ${wantedPath}`);
                 }
             });
         }
@@ -36,11 +40,11 @@ export class Serializer {
      * @param name Name of the workout
      * @returns The workout object if it exists otherwise undefined
      */
-    read(name: string): Workout | undefined {
-        const wantedPath = `${this.mainPath}/${name}.json`;
+    readWorkout(name: string): Workout | undefined {
+        const wantedPath = `${this.workoutPath}/${name}.json`;
 
         if (!fs.existsSync(wantedPath)) {
-            console.warn(`Could not find ${wantedPath}!`);
+            console.warn(`Could not find workout at ${wantedPath}!`);
             return undefined;
         }
 
@@ -57,18 +61,70 @@ export class Serializer {
      * 
      * @param name Name of the workout
      */
-    delete(name: string): void {
-        if (this.has(name)) {
-            fs.rmSync(`${this.mainPath}/${name}.json`);
+    deleteWorkout(name: string): void {
+        if (this.hasWorkout(name)) {
+            fs.rmSync(`${this.workoutPath}/${name}.json`);
         }
     }
 
-    has(name: string): boolean {
-        return fs.existsSync(`${this.mainPath}/${name}.json`);
+    hasWorkout(name: string): boolean {
+        return fs.existsSync(`${this.workoutPath}/${name}.json`);
+    }
+
+    writeExercise(exercise: Exercise): void {
+        const wantedPath = `${this.exercisePath}/${exercise.name}.json`;
+
+        // Create if not exists
+        if (!fs.existsSync(wantedPath)) {
+            fs.writeFile(wantedPath, JSON.stringify(exercise), (err) => {
+                if (err) {
+                    console.error(`Failed to write exercise to ${wantedPath}`);
+                }
+            });
+        }
+    }
+
+    readExercise(name: string): Workout | undefined {
+        const wantedPath = `${this.exercisePath}/${name}.json`;
+
+        if (!fs.existsSync(wantedPath)) {
+            console.warn(`Could not find exercise at ${wantedPath}!`);
+            return undefined;
+        }
+
+        const workoutStr = fs.readFileSync(wantedPath, { encoding: "utf-8", flag: "r" });
+
+        return JSON.parse(workoutStr) as Workout;
+    }
+
+    deleteExercise(name: string): void {
+        if (this.hasExercise(name)) {
+            fs.rmSync(`${this.exercisePath}/${name}.json`);
+        }
+    }
+
+    hasExercise(name: string): boolean {
+        return fs.existsSync(`${this.exercisePath}/${name}.json`);
+    }
+
+    // NOTE: Could make this lazy but we need to also check if there are new exercises
+    // So add some sort of "dirty" flag
+    allExercises(): Exercise[] {
+        const exercises: Exercise[] = [];
+
+        fs.readdirSync(this.exercisePath).map(
+            fileName => {
+                const wantedPath = `${this.exercisePath}/${fileName}`;
+                const exerciseStr = fs.readFileSync(wantedPath, { encoding: "utf-8", flag: "r" });
+                exercises.push(JSON.parse(exerciseStr) as Exercise);
+            }
+        );
+
+        return exercises;
     }
 
     listWorkoutNames(): string[] {
-        return fs.readdirSync(this.mainPath).map(
+        return fs.readdirSync(this.workoutPath).map(
             val => val.substring(0, val.length - ".json".length) // NOTE: is this a good idea?
         );
     }
