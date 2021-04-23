@@ -4,7 +4,7 @@ import { performance } from "perf_hooks";
 import express from "express";
 import socketio from "socket.io";
 
-import { Serializer } from "./seralize";
+import { Serializer } from "./serialize";
 import { Exercise, Workout } from "./workout";
 
 interface TimedTask {
