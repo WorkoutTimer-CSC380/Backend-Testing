@@ -123,9 +123,15 @@ export class Serializer {
         return exercises;
     }
 
+    listExerciseNames(): string[] {
+        return fs.readdirSync(this.exercisePath).map(
+            fileName => fileName.substring(0, fileName.length - ".json".length)
+        );
+    }
+
     listWorkoutNames(): string[] {
         return fs.readdirSync(this.workoutPath).map(
-            val => val.substring(0, val.length - ".json".length) // NOTE: is this a good idea?
+            fileName => fileName.substring(0, fileName.length - ".json".length) // NOTE: is this a good idea?
         );
     }
 }

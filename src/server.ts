@@ -109,11 +109,19 @@ export class Server {
             res.status(201).end();
         });
 
+        // Send ALL exercises
         this.app.get("/exercises", (req, res) => {
             const exercises = this.serializer.allExercises();
             // console.log("Getting all exercises...");
 
             res.status(200).send(exercises);
+        });
+
+        // Send only the names
+        this.app.get("/exercises/names", (req, res) => {
+            const exerciseNames = this.serializer.listExerciseNames();
+
+            res.status(200).send(exerciseNames);
         });
 
         this.app.delete("/exercises/:name", (req, res) => {
