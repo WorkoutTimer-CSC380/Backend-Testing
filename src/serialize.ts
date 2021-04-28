@@ -1,5 +1,6 @@
 import fs from "fs";
 
+import { RecentsQueue } from "./queue";
 import { Exercise, Workout } from "./workout";
 
 export class Serializer {
@@ -69,6 +70,24 @@ export class Serializer {
 
     hasWorkout(name: string): boolean {
         return fs.existsSync(`${this.workoutPath}/${name}.json`);
+    }
+
+    loadRecentWorkouts(max = 10): RecentsQueue {
+        // Create recent-workouts.json if it doesn't exist and give it an empty array
+        if (!fs.existsSync("./recent-workouts.json")) {
+            fs.writeFileSync("./recent-workouts.json", "[]");
+        }
+
+        const recentsStr = fs.readFileSync("./recent-workouts.json", { encoding: "utf-8", flag: "r" });
+        const recentsArray = JSON.parse(recentsStr) as Workout[];
+
+        return new RecentsQueue(max, recentsArray);
+    }
+
+    writeRecentWorkouts(recents: RecentsQueue): void {
+        const recentsArrayStr = recents.toString();
+
+        fs.writeFileSync("./recent-workouts.json", recentsArrayStr);
     }
 
     writeExercise(exercise: Exercise): void {

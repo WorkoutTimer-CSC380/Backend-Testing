@@ -1,11 +1,13 @@
 import http from "http";
 import { performance } from "perf_hooks";
+import process from "process";
 
 import express from "express";
 import socketio from "socket.io";
 
 import { Serializer } from "./serialize";
 import { Exercise, Workout } from "./workout";
+import { RecentsQueue } from "./queue";
 
 interface TimedTask {
     timeout: NodeJS.Timeout, // Timeout id
@@ -36,6 +38,8 @@ export class Server {
 
     public readonly serializer: Serializer;
 
+    private recentWorkouts: RecentsQueue;
+
     constructor(config?: ServerConfig) {
         // Setup express API
         this.app = express();
@@ -43,6 +47,15 @@ export class Server {
         this.io = new socketio.Server(this.httpServer);
 
         this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
+
+        this.recentWorkouts = this.serializer.loadRecentWorkouts(3);
+
+        // Save to disk on ctrl+c
+        process.on("SIGINT", () => {
+            console.log("Saving recent workouts");
+            this.serializer.writeRecentWorkouts(this.recentWorkouts);
+            process.exit();
+        });
 
         this.timers = new Map();
 
@@ -97,6 +110,26 @@ export class Server {
             this.serializer.deleteWorkout(name);
 
             res.status(200).end();
+        });
+
+        this.app.get("/recents", (req, res) => {
+            const recentWorkouts = this.recentWorkouts.data();
+
+            res.status(200).send(recentWorkouts);
+        });
+
+        this.app.get("/recents/:name", (req, res) => {
+            const name = req.params["name"];
+
+            const workout = this.serializer.readWorkout(name);
+
+            if (workout === undefined) {
+                res.status(404).send(`No workout called ${name}`);
+            } else {
+                this.recentWorkouts.enqueue(workout);
+                res.status(200).end();
+            }
+
         });
 
         this.app.post("/exercises", (req, res) => {

@@ -5,6 +5,7 @@ out/
 # Default directory for storing workouts
 workouts/
 exercises/
+recent-workouts.json
 
 # Test related output
 __fixtures__
