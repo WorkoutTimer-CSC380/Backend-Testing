@@ -10,22 +10,24 @@ import { Exercise, Workout } from "./workout";
 import { RecentsQueue } from "./queue";
 
 interface TimedTask {
-    timeout: NodeJS.Timeout, // Timeout id
-    start: DOMHighResTimeStamp, // When the workout was started
-    end: DOMHighResTimeStamp, // When the workout should end
-    left: DOMHighResTimeStamp, // Time left
-    message: string // Message to send to clients
+    timeout: NodeJS.Timeout; // Timeout id
+    start: DOMHighResTimeStamp; // When the workout was started
+    end: DOMHighResTimeStamp; // When the workout should end
+    left: DOMHighResTimeStamp; // Time left
+    message: string; // Message to send to clients
+    paused: boolean;
 }
 
 type TimerRequest = {
-    id: string, // Client giving id for a timer
-    duration: DOMHighResTimeStamp, // How long in seconds the timer should last in seconds
-    message: string // Message to send to clients
+    id: string; // Client giving id for a timer
+    duration: DOMHighResTimeStamp; // How long in seconds the timer should last in seconds
+    message: string; // Message to send to clients
 };
 
 export interface ServerConfig {
-    workoutPath: string;
-    exercisePath: string;
+    workoutPath?: string;
+    exercisePath?: string;
+    maxRecents?: number;
 }
 
 export class Server {
@@ -44,11 +46,17 @@ export class Server {
         // Setup express API
         this.app = express();
         this.httpServer = new http.Server(this.app);
-        this.io = new socketio.Server(this.httpServer);
+        // Allow requests from front-end
+        this.io = new socketio.Server(this.httpServer, {
+            cors: {
+                origin: "http://localhost:3000",
+                methods: ["GET", "POST"]
+            }
+        });
 
         this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
 
-        this.recentWorkouts = this.serializer.loadRecentWorkouts(3);
+        this.recentWorkouts = this.serializer.loadRecentWorkouts(config?.maxRecents || 3);
 
         // Save to disk on ctrl+c
         process.on("SIGINT", () => {
@@ -161,7 +169,7 @@ export class Server {
             const name = req.params["name"];
 
             // console.log(`Deleting exercise ${name}`);
-            
+
             this.serializer.deleteExercise(name);
 
             res.status(200).end();
@@ -189,7 +197,8 @@ export class Server {
                 end: end,
                 left: end - start,
                 timeout: timeout,
-                message: tReq.message
+                message: tReq.message,
+                paused: false
             });
 
             res.status(201).end();
@@ -204,6 +213,7 @@ export class Server {
                 const now = performance.now();
                 copy.left = copy.end - now;
                 copy.end = now + copy.left;
+                copy.paused = true;
                 this.timers.set(key, copy);
             });
 
@@ -213,25 +223,21 @@ export class Server {
 
         this.app.get("/timers/resume", (req, res) => { // Resume ALL timers
             this.timers.forEach((val, key) => {
-                const newTimeout = setTimeout(() => this.io.emit("timer", val.message), val.left);
+                if (val.paused) {
+                    const newTimeout = setTimeout(() => this.io.emit("timer", val.message), val.left);
 
-                const copy = { ...val };
-                copy.timeout = newTimeout;
-                this.timers.set(key, copy);
+                    const copy = { ...val };
+                    copy.timeout = newTimeout;
+                    copy.paused = false;
+                    this.timers.set(key, copy);
+                }
             });
 
             res.status(200).end();
         });
     }
 
-    // public initSocketio(): void {
-    // NOTE: io.of("/").sockets
-    // Use above to grab to connections to server as a map.
-    // Each socket will have an id
-    // }
-
     public listen(port: number): void {
-        // this.initSocketio();
         this.httpServer.listen(port, () => console.log(`Listening on port ${port}`));
     }
 }
