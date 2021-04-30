@@ -2,6 +2,7 @@ import http from "http";
 import { performance } from "perf_hooks";
 import process from "process";
 
+import cors from "cors";
 import express from "express";
 import socketio from "socket.io";
 
@@ -75,7 +76,25 @@ export class Server {
      */
     private routes() {
         this.app.use(express.json());
+        this.app.use(cors());
 
+        this.io.on("connection", socket =>{
+            socket.on("MobilePause", () => {
+                console.log("Made it to server");
+                this.io.emit("DesktopPause");
+            });
+
+            socket.on("MobilePlay", () => {
+                console.log("Made it to server");
+                this.io.emit("DesktopPlay");
+            });
+
+            socket.on("MobileRestart", () => {
+                console.log("Made it to server");
+                this.io.emit("DesktopRestart");
+            });
+        })
+        
         // List all workouts available naively
         this.app.get("/workouts", (_, res) => {
             res.json(this.serializer.listWorkoutNames());
