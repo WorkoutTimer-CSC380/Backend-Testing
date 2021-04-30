@@ -2,6 +2,7 @@ import http from "http";
 import { performance } from "perf_hooks";
 import process from "process";
 
+import cors from "cors";
 import express from "express";
 import socketio from "socket.io";
 
@@ -44,7 +45,12 @@ export class Server {
         // Setup express API
         this.app = express();
         this.httpServer = new http.Server(this.app);
-        this.io = new socketio.Server(this.httpServer);
+        this.io = new socketio.Server(this.httpServer, {
+            cors: {
+                origin: "http://localhost:3000",
+                methods: ["GET", "POST"]
+            }
+        });
 
         this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
 
@@ -67,6 +73,7 @@ export class Server {
      */
     private routes() {
         this.app.use(express.json());
+        this.app.use(cors());
 
         // List all workouts available naively
         this.app.get("/workouts", (_, res) => {
@@ -169,7 +176,7 @@ export class Server {
 
         this.app.post("/timers", (req, res) => {
             const tReq = req.body as TimerRequest;
-
+            console.log("made it to this endpoint");
             // Timer already exists
             if (this.timers.has(tReq.id)) {
                 res.status(409).end();
@@ -198,6 +205,7 @@ export class Server {
         // Strange way of doing this probably
         this.app.get("/timers/pause", (req, res) => { // Pause ALL timers
             this.timers.forEach((val, key) => {
+                console.log("pause signal received");
                 clearTimeout(val.timeout);
 
                 const copy = { ...val };
