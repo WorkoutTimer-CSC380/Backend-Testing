@@ -11,252 +11,276 @@ import { Exercise, Workout } from "./workout";
 import { RecentsQueue } from "./queue";
 
 interface TimedTask {
-    timeout: NodeJS.Timeout; // Timeout id
-    start: DOMHighResTimeStamp; // When the workout was started
-    end: DOMHighResTimeStamp; // When the workout should end
-    left: DOMHighResTimeStamp; // Time left
-    message: string; // Message to send to clients
-    paused: boolean;
+  timeout: NodeJS.Timeout; // Timeout id
+  start: DOMHighResTimeStamp; // When the workout was started
+  end: DOMHighResTimeStamp; // When the workout should end
+  left: DOMHighResTimeStamp; // Time left
+  message: string; // Message to send to clients
+  paused: boolean;
 }
 
 type TimerRequest = {
-    id: string; // Client giving id for a timer
-    duration: DOMHighResTimeStamp; // How long in seconds the timer should last in seconds
-    message: string; // Message to send to clients
+  id: string; // Client giving id for a timer
+  duration: DOMHighResTimeStamp; // How long in seconds the timer should last in seconds
+  message: string; // Message to send to clients
 };
 
 export interface ServerConfig {
-    workoutPath?: string;
-    exercisePath?: string;
-    maxRecents?: number;
+  workoutPath?: string;
+  exercisePath?: string;
+  maxRecents?: number;
 }
 
 export class Server {
-    public readonly app: express.Express;
-    public readonly httpServer: http.Server;
-    public readonly io: socketio.Server;
+  public readonly app: express.Express;
+  public readonly httpServer: http.Server;
+  public readonly io: socketio.Server;
 
-    // Map the ids to the servers timers
-    timers: Map<string, TimedTask>;
+  // Map the ids to the servers timers
+  timers: Map<string, TimedTask>;
 
-    public readonly serializer: Serializer;
+  public readonly serializer: Serializer;
 
-    private recentWorkouts: RecentsQueue;
+  private recentWorkouts: RecentsQueue;
 
-    constructor(config?: ServerConfig) {
-        // Setup express API
-        this.app = express();
-        this.httpServer = new http.Server(this.app);
-        // Allow requests from front-end
-        this.io = new socketio.Server(this.httpServer, {
-            cors: {
-                origin: "http://localhost:3000",
-                methods: ["GET", "POST"]
-            }
-        });
+  constructor(config?: ServerConfig) {
+    // Setup express API
+    this.app = express();
+    this.httpServer = new http.Server(this.app);
+    // Allow requests from front-end
+    this.io = new socketio.Server(this.httpServer, {
+      cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"],
+      },
+    });
 
-        this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
+    this.serializer = new Serializer(config?.workoutPath, config?.exercisePath);
 
-        this.recentWorkouts = this.serializer.loadRecentWorkouts(config?.maxRecents || 3);
+    this.recentWorkouts = this.serializer.loadRecentWorkouts(
+      config?.maxRecents || 3
+    );
 
-        // Save to disk on ctrl+c
-        process.on("SIGINT", () => {
-            console.log("Saving recent workouts");
-            this.serializer.writeRecentWorkouts(this.recentWorkouts);
-            process.exit();
-        });
+    // Save to disk on ctrl+c
+    process.on("SIGINT", () => {
+      console.log("Saving recent workouts");
+      this.serializer.writeRecentWorkouts(this.recentWorkouts);
+      process.exit();
+    });
 
-        this.timers = new Map();
+    this.timers = new Map();
 
-        this.routes();
-    }
+    this.routes();
+  }
 
-    /**
-     * REST API for CRUD operations on the timer
-     */
-    private routes() {
-        this.app.use(express.json());
-        this.app.use(cors());
+  /**
+   * REST API for CRUD operations on the timer
+   */
+  private routes() {
+    this.app.use(express.json());
+    this.app.use(cors());
 
-        this.io.on("connection", socket =>{
-            socket.on("MobilePause", () => {
-                console.log("Made it to server");
-                this.io.emit("DesktopPause");
-            });
+    this.io.on("connection", (socket) => {
+      socket.on("Invoked-MobilePause", () => {
+        console.log("mobile-pause");
+        this.io.emit("DesktopPause");
+      });
 
-            socket.on("MobilePlay", () => {
-                console.log("Made it to server");
-                this.io.emit("DesktopPlay");
-            });
+      socket.on("Invoked-MobilePlay", () => {
+        console.log("mobile-play");
+        this.io.emit("DesktopPlay");
+      });
 
-            socket.on("MobileRestart", () => {
-                console.log("Made it to server");
-                this.io.emit("DesktopRestart");
-            });
-        })
+      socket.on("Invoked-MobileRestart", () => {
+        console.log("mobile-restart");
+        this.io.emit("DesktopRestart");
+      });
+      socket.on("Invoked-DesktopPause", () => {
+        console.log("desktop-pause");
+        this.io.emit("DesktopPause");
         
-        // List all workouts available naively
-        this.app.get("/workouts", (_, res) => {
-            res.json(this.serializer.listWorkoutNames());
+      });
 
-            res.status(200).end();
-        });
+      socket.on("Invoked-DesktopPlay", () => {
+        console.log("desktop-play");
+        this.io.emit("DesktopPlay");
+      });
 
-        // Get information for a specific workout
-        this.app.get("/workouts/:name", (req, res) => {
-            console.log(`GET /workouts/${req.params["name"]}`);
+      socket.on("Invoked-DesktopRestart", () => {
+        console.log("desktop-restart");
+        this.io.emit("DesktopRestart");
+      });
+    });
 
-            const name = req.params["name"];
+    // List all workouts available naively
+    this.app.get("/workouts", (_, res) => {
+      res.json(this.serializer.listWorkoutNames());
 
-            const workout = this.serializer.readWorkout(name);
-            if (workout !== undefined) {
-                res.json(workout);
-            } else {
-                res.status(400).send(`Could not find workout named "${name}"`);
-            }
-        });
+      res.status(200).end();
+    });
 
-        // Create a workout: Returns 201 on success, 400 otherwise
-        this.app.post("/workouts", (req, res) => {
-            const workout = req.body as Workout;
+    // Get information for a specific workout
+    this.app.get("/workouts/:name", (req, res) => {
+      console.log(`GET /workouts/${req.params["name"]}`);
 
-            // console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
+      const name = req.params["name"];
 
-            // We're going to assume ALL data from the client should be correct
-            // console.log("Writing to JSON file...");
+      const workout = this.serializer.readWorkout(name);
+      if (workout !== undefined) {
+        res.json(workout);
+      } else {
+        res.status(400).send(`Could not find workout named "${name}"`);
+      }
+    });
 
-            this.serializer.writeWorkout(workout);
+    // Create a workout: Returns 201 on success, 400 otherwise
+    this.app.post("/workouts", (req, res) => {
+      const workout = req.body as Workout;
 
-            res.status(201).end(); // We've created the resource!
-        });
+      // console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
 
-        // Delete a workout on the backend
-        this.app.delete("/workouts/:name", (req, res) => {
-            const name = req.params["name"];
+      // We're going to assume ALL data from the client should be correct
+      // console.log("Writing to JSON file...");
 
-            this.serializer.deleteWorkout(name);
+      this.serializer.writeWorkout(workout);
 
-            res.status(200).end();
-        });
+      res.status(201).end(); // We've created the resource!
+    });
 
-        this.app.get("/recents", (req, res) => {
-            const recentWorkouts = this.recentWorkouts.data();
+    // Delete a workout on the backend
+    this.app.delete("/workouts/:name", (req, res) => {
+      const name = req.params["name"];
 
-            res.status(200).send(recentWorkouts);
-        });
+      this.serializer.deleteWorkout(name);
 
-        this.app.get("/recents/:name", (req, res) => {
-            const name = req.params["name"];
+      res.status(200).end();
+    });
 
-            const workout = this.serializer.readWorkout(name);
+    this.app.get("/recents", (req, res) => {
+      const recentWorkouts = this.recentWorkouts.data();
 
-            if (workout === undefined) {
-                res.status(404).send(`No workout called ${name}`);
-            } else {
-                this.recentWorkouts.enqueue(workout);
-                res.status(200).end();
-            }
+      res.status(200).send(recentWorkouts);
+    });
 
-        });
+    this.app.get("/recents/:name", (req, res) => {
+      const name = req.params["name"];
 
-        this.app.post("/exercises", (req, res) => {
-            const exercise = req.body as Exercise;
+      const workout = this.serializer.readWorkout(name);
 
-            // console.log(`Creating exercise: ${exercise}`);
+      if (workout === undefined) {
+        res.status(404).send(`No workout called ${name}`);
+      } else {
+        this.recentWorkouts.enqueue(workout);
+        res.status(200).end();
+      }
+    });
 
-            this.serializer.writeExercise(exercise);
+    this.app.post("/exercises", (req, res) => {
+      const exercise = req.body as Exercise;
 
-            res.status(201).end();
-        });
+      // console.log(`Creating exercise: ${exercise}`);
 
-        // Send ALL exercises
-        this.app.get("/exercises", (req, res) => {
-            const exercises = this.serializer.allExercises();
-            // console.log("Getting all exercises...");
+      this.serializer.writeExercise(exercise);
 
-            res.status(200).send(exercises);
-        });
+      res.status(201).end();
+    });
 
-        // Send only the names
-        this.app.get("/exercises/names", (req, res) => {
-            const exerciseNames = this.serializer.listExerciseNames();
+    // Send ALL exercises
+    this.app.get("/exercises", (req, res) => {
+      const exercises = this.serializer.allExercises();
+      // console.log("Getting all exercises...");
 
-            res.status(200).send(exerciseNames);
-        });
+      res.status(200).send(exercises);
+    });
 
-        this.app.delete("/exercises/:name", (req, res) => {
-            const name = req.params["name"];
+    // Send only the names
+    this.app.get("/exercises/names", (req, res) => {
+      const exerciseNames = this.serializer.listExerciseNames();
+      res.status(200).send(exerciseNames);
+    });
 
-            // console.log(`Deleting exercise ${name}`);
+    this.app.delete("/exercises/:name", (req, res) => {
+      const name = req.params["name"];
 
-            this.serializer.deleteExercise(name);
+      // console.log(`Deleting exercise ${name}`);
 
-            res.status(200).end();
-        });
+      this.serializer.deleteExercise(name);
 
-        this.app.post("/timers", (req, res) => {
-            const tReq = req.body as TimerRequest;
+      res.status(200).end();
+    });
 
-            // Timer already exists
-            if (this.timers.has(tReq.id)) {
-                res.status(409).end();
-                return;
-            }
+    this.app.post("/timers", (req, res) => {
+      const tReq = req.body as TimerRequest;
 
-            const MS_PER_SEC = 1000;
+      // Timer already exists
+      if (this.timers.has(tReq.id)) {
+        res.status(409).end();
+        return;
+      }
 
-            // Timer duration is in milliseconds!
-            const msDuration = tReq.duration * MS_PER_SEC;
-            const timeout = setTimeout(() => this.io.emit("timer", tReq.message), msDuration);
+      const MS_PER_SEC = 1000;
 
-            const start = performance.now();
-            const end = performance.now() + msDuration;
-            this.timers.set(tReq.id, {
-                start: start,
-                end: end,
-                left: end - start,
-                timeout: timeout,
-                message: tReq.message,
-                paused: false
-            });
+      // Timer duration is in milliseconds!
+      const msDuration = tReq.duration * MS_PER_SEC;
+      const timeout = setTimeout(
+        () => this.io.emit("timer", tReq.message),
+        msDuration
+      );
 
-            res.status(201).end();
-        });
+      const start = performance.now();
+      const end = performance.now() + msDuration;
+      this.timers.set(tReq.id, {
+        start: start,
+        end: end,
+        left: end - start,
+        timeout: timeout,
+        message: tReq.message,
+        paused: false,
+      });
 
-        // Strange way of doing this probably
-        this.app.get("/timers/pause", (req, res) => { // Pause ALL timers
-            this.timers.forEach((val, key) => {
-                clearTimeout(val.timeout);
+      res.status(201).end();
+    });
 
-                const copy = { ...val };
-                const now = performance.now();
-                copy.left = copy.end - now;
-                copy.end = now + copy.left;
-                copy.paused = true;
-                this.timers.set(key, copy);
-            });
+    // Strange way of doing this probably
+    this.app.get("/timers/pause", (req, res) => {
+      // Pause ALL timers
+      this.timers.forEach((val, key) => {
+        clearTimeout(val.timeout);
 
-            res.status(200).end();
-        });
+        const copy = { ...val };
+        const now = performance.now();
+        copy.left = copy.end - now;
+        copy.end = now + copy.left;
+        copy.paused = true;
+        this.timers.set(key, copy);
+      });
 
+      res.status(200).end();
+    });
 
-        this.app.get("/timers/resume", (req, res) => { // Resume ALL timers
-            this.timers.forEach((val, key) => {
-                if (val.paused) {
-                    const newTimeout = setTimeout(() => this.io.emit("timer", val.message), val.left);
+    this.app.get("/timers/resume", (req, res) => {
+      // Resume ALL timers
+      this.timers.forEach((val, key) => {
+        if (val.paused) {
+          const newTimeout = setTimeout(
+            () => this.io.emit("timer", val.message),
+            val.left
+          );
 
-                    const copy = { ...val };
-                    copy.timeout = newTimeout;
-                    copy.paused = false;
-                    this.timers.set(key, copy);
-                }
-            });
+          const copy = { ...val };
+          copy.timeout = newTimeout;
+          copy.paused = false;
+          this.timers.set(key, copy);
+        }
+      });
 
-            res.status(200).end();
-        });
-    }
+      res.status(200).end();
+    });
+  }
 
-    public listen(port: number): void {
-        this.httpServer.listen(port, () => console.log(`Listening on port ${port}`));
-    }
+  public listen(port: number): void {
+    this.httpServer.listen(port, () =>
+      console.log(`Listening on port ${port}`)
+    );
+  }
 }
