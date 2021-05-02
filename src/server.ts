@@ -50,8 +50,8 @@ export class Server {
     // Allow requests from front-end
     this.io = new socketio.Server(this.httpServer, {
       cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
+         origin: "*",
+          methods: ["GET", "POST"],
       },
     });
 
@@ -81,33 +81,33 @@ export class Server {
     this.app.use(cors());
 
     this.io.on("connection", (socket) => {
-      socket.on("Invoked-MobilePause", () => {
-        console.log("mobile-pause");
-        this.io.emit("DesktopPause");
+      socket.on("Invoked-MobilePlay", () => {
+        console.log("mobile-play received");
+        this.io.emit("DesktopPlay");
       });
 
-      socket.on("Invoked-MobilePlay", () => {
-        console.log("mobile-play");
-        this.io.emit("DesktopPlay");
+      socket.on("Invoked-MobilePause", () => {
+        console.log("mobile-pause received");
+        this.io.emit("DesktopPause");
       });
 
       socket.on("Invoked-MobileRestart", () => {
-        console.log("mobile-restart");
+        console.log("mobile-restart received");
         this.io.emit("DesktopRestart");
-      });
-      socket.on("Invoked-DesktopPause", () => {
-        console.log("desktop-pause");
-        this.io.emit("DesktopPause");
-        
       });
 
       socket.on("Invoked-DesktopPlay", () => {
-        console.log("desktop-play");
+        console.log("desktop-play received");
         this.io.emit("DesktopPlay");
       });
 
+      socket.on("Invoked-DesktopPause", () => {
+        console.log("desktop-pause received");
+        this.io.emit("DesktopPause");
+      });
+
       socket.on("Invoked-DesktopRestart", () => {
-        console.log("desktop-restart");
+        console.log("desktop-restart received");
         this.io.emit("DesktopRestart");
       });
     });
@@ -243,6 +243,8 @@ export class Server {
 
     // Strange way of doing this probably
     this.app.get("/timers/pause", (req, res) => {
+      console.log(new Date() + ": pausing timers");
+
       // Pause ALL timers
       this.timers.forEach((val, key) => {
         clearTimeout(val.timeout);
@@ -259,6 +261,8 @@ export class Server {
     });
 
     this.app.get("/timers/resume", (req, res) => {
+      console.log(new Date() + ": resuming timers");
+
       // Resume ALL timers
       this.timers.forEach((val, key) => {
         if (val.paused) {
