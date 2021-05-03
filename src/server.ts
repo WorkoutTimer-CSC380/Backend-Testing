@@ -50,8 +50,8 @@ export class Server {
     // Allow requests from front-end
     this.io = new socketio.Server(this.httpServer, {
       cors: {
-         origin: "*",
-          methods: ["GET", "POST"],
+        origin: "*",
+        methods: ["GET", "POST"],
       },
     });
 
@@ -82,32 +82,32 @@ export class Server {
 
     this.io.on("connection", (socket) => {
       socket.on("Invoked-MobilePlay", () => {
-        console.log("mobile-play received");
+        console.log("[*] mobile-play received");
         this.io.emit("DesktopPlay");
       });
 
       socket.on("Invoked-MobilePause", () => {
-        console.log("mobile-pause received");
+        console.log("[*] mobile-pause received");
         this.io.emit("DesktopPause");
       });
 
       socket.on("Invoked-MobileRestart", () => {
-        console.log("mobile-restart received");
+        console.log("[*] mobile-restart received");
         this.io.emit("DesktopRestart");
       });
 
       socket.on("Invoked-DesktopPlay", () => {
-        console.log("desktop-play received");
+        console.log("[*] desktop-play received");
         this.io.emit("DesktopPlay");
       });
 
       socket.on("Invoked-DesktopPause", () => {
-        console.log("desktop-pause received");
+        console.log("[*] desktop-pause received");
         this.io.emit("DesktopPause");
       });
 
       socket.on("Invoked-DesktopRestart", () => {
-        console.log("desktop-restart received");
+        console.log("[*] desktop-restart received");
         this.io.emit("DesktopRestart");
       });
     });
@@ -116,20 +116,24 @@ export class Server {
     this.app.get("/workouts", (_, res) => {
       res.json(this.serializer.listWorkoutNames());
 
+      console.log(`[^] All workout names requested`);
+
       res.status(200).end();
     });
 
     // Get information for a specific workout
     this.app.get("/workouts/:name", (req, res) => {
-      console.log(`GET /workouts/${req.params["name"]}`);
-
       const name = req.params["name"];
 
       const workout = this.serializer.readWorkout(name);
       if (workout !== undefined) {
         res.json(workout);
+        console.log(`[^] Workout ${name} requested`);
+
       } else {
-        res.status(400).send(`Could not find workout named "${name}"`);
+        console.warn(`[!] No workout called ${name}`);
+
+        res.status(400).send(`No workout called "${name}"`);
       }
     });
 
@@ -137,10 +141,7 @@ export class Server {
     this.app.post("/workouts", (req, res) => {
       const workout = req.body as Workout;
 
-      // console.log(`POST /workouts with content:\n ${JSON.stringify(workout)}`);
-
-      // We're going to assume ALL data from the client should be correct
-      // console.log("Writing to JSON file...");
+      console.log(`[+] Workout "${workout.name}" created`);
 
       this.serializer.writeWorkout(workout);
 
@@ -151,6 +152,12 @@ export class Server {
     this.app.delete("/workouts/:name", (req, res) => {
       const name = req.params["name"];
 
+      if (this.serializer.hasWorkout(name)) {
+        console.log(`[-] Workout ${name} deleted`);
+      } else {
+        console.warn(`[!] No workout called ${name}`);
+      }
+
       this.serializer.deleteWorkout(name);
 
       res.status(200).end();
@@ -158,6 +165,8 @@ export class Server {
 
     this.app.get("/recents", (req, res) => {
       const recentWorkouts = this.recentWorkouts.data();
+
+      console.log(`[^] Recent workouts requested`);
 
       res.status(200).send(recentWorkouts);
     });
@@ -168,8 +177,10 @@ export class Server {
       const workout = this.serializer.readWorkout(name);
 
       if (workout === undefined) {
-        res.status(404).send(`No workout called ${name}`);
+        console.log(`[!] No workout called "${name}"`);
+        res.status(404).send(`No workout called "${name}"`);
       } else {
+        console.log(`[+] Added workout "${name}" to recents`);
         this.recentWorkouts.enqueue(workout);
         res.status(200).end();
       }
@@ -178,7 +189,7 @@ export class Server {
     this.app.post("/exercises", (req, res) => {
       const exercise = req.body as Exercise;
 
-      // console.log(`Creating exercise: ${exercise}`);
+      console.log(`[+] Exercise ${exercise.name} created`);
 
       this.serializer.writeExercise(exercise);
 
@@ -188,7 +199,8 @@ export class Server {
     // Send ALL exercises
     this.app.get("/exercises", (req, res) => {
       const exercises = this.serializer.allExercises();
-      // console.log("Getting all exercises...");
+
+      console.log(`[^] All exercises requested`);
 
       res.status(200).send(exercises);
     });
@@ -196,13 +208,16 @@ export class Server {
     // Send only the names
     this.app.get("/exercises/names", (req, res) => {
       const exerciseNames = this.serializer.listExerciseNames();
+
+      console.log(`[^] All exercise names requested`);
+
       res.status(200).send(exerciseNames);
     });
 
     this.app.delete("/exercises/:name", (req, res) => {
       const name = req.params["name"];
 
-      // console.log(`Deleting exercise ${name}`);
+      console.log(`[-] Exercise "${name}" deleted`);
 
       this.serializer.deleteExercise(name);
 
@@ -211,6 +226,8 @@ export class Server {
 
     this.app.post("/timers", (req, res) => {
       const tReq = req.body as TimerRequest;
+
+      console.log(`[+] Timer ${tReq.id} created`);
 
       // Timer already exists
       if (this.timers.has(tReq.id)) {
@@ -243,7 +260,7 @@ export class Server {
 
     // Strange way of doing this probably
     this.app.get("/timers/pause", (req, res) => {
-      console.log(new Date() + ": pausing timers");
+      console.log(`[*] All timers paused`);
 
       // Pause ALL timers
       this.timers.forEach((val, key) => {
@@ -261,7 +278,7 @@ export class Server {
     });
 
     this.app.get("/timers/resume", (req, res) => {
-      console.log(new Date() + ": resuming timers");
+      console.log(`[*] All timers resumed`);
 
       // Resume ALL timers
       this.timers.forEach((val, key) => {
@@ -284,7 +301,7 @@ export class Server {
 
   public listen(port: number): void {
     this.httpServer.listen(port, () =>
-      console.log(`Listening on port ${port}`)
+      console.log(`[*] Listening on port ${port}`)
     );
   }
 }
