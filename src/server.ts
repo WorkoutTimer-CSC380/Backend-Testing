@@ -85,19 +85,19 @@ export class Server {
 
     this.io.on("connection", (socket) => {
       socket.on("pause", (device: DeviceType) => {
-        console.log("[*] Timer pause received");
+        console.log(`[*] Timer pause received from ${device}`);
       });
 
       socket.on("play", (device: DeviceType) => {
-        console.log("[*] Timer play received");
+        console.log(`[*] Timer play received from ${device}`);
       });
 
       socket.on("restart", (device: DeviceType) => {
-        console.log("[*] Timer restart received");
+        console.log(`[*] Timer restart received from ${device}`);
       });
 
       socket.on("stop", (device: DeviceType) => {
-        console.log("[*] Timer stop received");
+        console.log(`[*] Timer stop received from ${device}`);
       });
     });
 
