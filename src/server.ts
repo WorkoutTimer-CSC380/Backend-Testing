@@ -77,38 +77,27 @@ export class Server {
    * REST API for CRUD operations on the timer
    */
   private routes() {
+    type DeviceType = "desktop" | "mobile";
+    type TimerEvent = "pause" | "play" | "restart" | "stop";
+
     this.app.use(express.json());
     this.app.use(cors());
 
     this.io.on("connection", (socket) => {
-      socket.on("Invoked-MobilePlay", () => {
-        console.log("[*] mobile-play received");
-        this.io.emit("DesktopPlay");
+      socket.on("pause", (device: DeviceType) => {
+        console.log("[*] Timer pause received");
       });
 
-      socket.on("Invoked-MobilePause", () => {
-        console.log("[*] mobile-pause received");
-        this.io.emit("DesktopPause");
+      socket.on("play", (device: DeviceType) => {
+        console.log("[*] Timer play received");
       });
 
-      socket.on("Invoked-MobileRestart", () => {
-        console.log("[*] mobile-restart received");
-        this.io.emit("DesktopRestart");
+      socket.on("restart", (device: DeviceType) => {
+        console.log("[*] Timer restart received");
       });
 
-      socket.on("Invoked-DesktopPlay", () => {
-        console.log("[*] desktop-play received");
-        this.io.emit("DesktopPlay");
-      });
-
-      socket.on("Invoked-DesktopPause", () => {
-        console.log("[*] desktop-pause received");
-        this.io.emit("DesktopPause");
-      });
-
-      socket.on("Invoked-DesktopRestart", () => {
-        console.log("[*] desktop-restart received");
-        this.io.emit("DesktopRestart");
+      socket.on("stop", (device: DeviceType) => {
+        console.log("[*] Timer stop received");
       });
     });
 
