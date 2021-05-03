@@ -25,14 +25,11 @@ export class Serializer {
     writeWorkout(workout: Workout): void {
         const wantedPath = `${this.workoutPath}/${workout.name}.json`;
 
-        // Create if not exists
-        if (!fs.existsSync(wantedPath)) {
-            fs.writeFile(wantedPath, JSON.stringify(workout), (err) => {
-                if (err) {
-                    console.error(`Failed to write workout to ${wantedPath}`);
-                }
-            });
-        }
+        fs.writeFile(wantedPath, JSON.stringify(workout), (err) => {
+            if (err) {
+                console.error(`Failed to write workout to ${wantedPath}`);
+            }
+        });
     }
 
     /**
@@ -93,14 +90,11 @@ export class Serializer {
     writeExercise(exercise: Exercise): void {
         const wantedPath = `${this.exercisePath}/${exercise.name}.json`;
 
-        // Create if not exists
-        if (!fs.existsSync(wantedPath)) {
-            fs.writeFile(wantedPath, JSON.stringify(exercise), (err) => {
-                if (err) {
-                    console.error(`Failed to write exercise to ${wantedPath}`);
-                }
-            });
-        }
+        fs.writeFile(wantedPath, JSON.stringify(exercise), (err) => {
+            if (err) {
+                console.error(`Failed to write exercise to ${wantedPath}`);
+            }
+        });
     }
 
     readExercise(name: string): Workout | undefined {
