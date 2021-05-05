@@ -77,27 +77,25 @@ export class Server {
    * REST API for CRUD operations on the timer
    */
   private routes() {
-    type DeviceType = "desktop" | "mobile";
-    type TimerEvent = "pause" | "play" | "restart" | "stop";
-
     this.app.use(express.json());
     this.app.use(cors());
 
     this.io.on("connection", (socket) => {
-      socket.on("pause", (device: DeviceType) => {
-        console.log(`[*] Timer pause received from ${device}`);
+      socket.on("pause", () => {
+        console.log("Pause received");
+        this.io.emit("desktop-pause");
       });
-
-      socket.on("play", (device: DeviceType) => {
-        console.log(`[*] Timer play received from ${device}`);
+      socket.on("play", () => {
+        console.log("Play received");
+        this.io.emit("desktop-play");
       });
-
-      socket.on("restart", (device: DeviceType) => {
-        console.log(`[*] Timer restart received from ${device}`);
+      socket.on("restart", () => {
+        console.log("Restart received");
+        this.io.emit("desktop-restart");
       });
-
-      socket.on("stop", (device: DeviceType) => {
-        console.log(`[*] Timer stop received from ${device}`);
+      socket.on("stop", () => {
+        console.log("Stop received");
+        this.io.emit("desktop-stop");
       });
     });
 
@@ -118,7 +116,6 @@ export class Server {
       if (workout !== undefined) {
         res.json(workout);
         console.log(`[^] Workout ${name} requested`);
-
       } else {
         console.warn(`[!] No workout called ${name}`);
 
@@ -155,9 +152,11 @@ export class Server {
     this.app.get("/recents", (req, res) => {
       const recentWorkouts = this.recentWorkouts.data();
 
+      const names = recentWorkouts.map(val => val.name);
+
       console.log(`[^] Recent workouts requested`);
 
-      res.status(200).send(recentWorkouts);
+      res.status(200).send(names);
     });
 
     this.app.get("/recents/:name", (req, res) => {
