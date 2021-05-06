@@ -152,9 +152,11 @@ export class Server {
     this.app.get("/recents", (req, res) => {
       const recentWorkouts = this.recentWorkouts.data();
 
+      const names = recentWorkouts.map(val => val.name);
+
       console.log(`[^] Recent workouts requested`);
 
-      res.status(200).send(recentWorkouts);
+      res.status(200).send(names);
     });
 
     this.app.get("/recents/:name", (req, res) => {
