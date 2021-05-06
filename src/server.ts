@@ -200,6 +200,21 @@ export class Server {
       res.status(200).send(exerciseNames);
     });
 
+    // Get information for a specific exercise
+    this.app.get("/exercises/:name", (req, res) => {
+      const name = req.params["name"];
+
+      const exercise = this.serializer.readExercise(name);
+      if (exercise !== undefined) {
+        res.json(exercise);
+        console.log(`[^] Exercise ${name} requested`);
+      } else {
+        console.warn(`[!] No Exercise called ${name}`);
+
+        res.status(400).send(`No Exercise called "${name}"`);
+      }
+    });
+
     this.app.delete("/exercises/:name", (req, res) => {
       const name = req.params["name"];
 
